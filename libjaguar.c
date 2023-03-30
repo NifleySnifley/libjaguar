@@ -1,4 +1,6 @@
 #include "libjaguar.h"
+#include <stdio.h>
+#include <assert.h>
 
 int open_jaguar_connection(JaguarConnection *conn, const char *serial_port)
 {
@@ -8,7 +10,8 @@ int open_jaguar_connection(JaguarConnection *conn, const char *serial_port)
     conn->serial_port = serial_port;
 
     // open serial port
-    fd = open(serial_port, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    // TODO: Fix nonblocking IO for more speeeed!
+    fd = open(serial_port, O_RDWR | O_NOCTTY);
     if (fd < 0) {
         // could not open serial port
         return 1;
@@ -86,10 +89,13 @@ int recieve_can_message(JaguarConnection *conn, CANMessage *message)
 
     fd = conn->serial_fd;
 
+    // printf("Starting read\n");
     // discard bytes or wait until start of frame read
     read(fd, &read_byte, 1);
+    // printf("read: %x\n", read_byte);
     while(read_byte != START_OF_FRAME) {
         read(fd, &read_byte, 1);
+        // printf("read: %x\n", read_byte);
     }
 
     bytes_read = 0;
@@ -97,15 +103,19 @@ int recieve_can_message(JaguarConnection *conn, CANMessage *message)
 
     read(fd, &size, 1);
     encoded_message.data[1] = size;
+    assert(size <= 8);
+    // printf("Size: %d\n", size);
 
     // read bytes into encoded message buffer
     data_ptr = &(encoded_message.data[2]);
-    for(bytes_read = 0; bytes_read < size; bytes_read++) {
+    for (bytes_read = 0; bytes_read < size; bytes_read++) {
         read(fd, data_ptr, 1);
+        // printf("read: %x\n", *data_ptr);
         if (*data_ptr == ENCODE_BYTE_A){
             // read the second encoded byte
             data_ptr += 1;
             read(fd, data_ptr, 1);
+            // printf("read: %x\n", *data_ptr);
             extra_bytes += 1;
         }
         data_ptr += 1;
@@ -149,11 +159,13 @@ bool valid_sys_reply(CANMessage *message, CANMessage *reply)
 
 bool valid_jaguar_reply(CANMessage *message, CANMessage *reply)
 {
-    return reply->manufacturer == MANUFACTURER_TI 
+    bool v = reply->manufacturer == MANUFACTURER_TI 
             && reply->device_type == DEVTYPE_MOTORCTRL
             && reply->api_class == message->api_class
             && reply->api_index == message->api_index
             && reply->device == message->device;
+    // printf("Jaguar reply valid? %d\n", v);
+    return v;
 }
 
 bool valid_ack(CANMessage *message, CANMessage *ack)
@@ -283,6 +295,13 @@ int status_position(JaguarConnection *conn, uint8_t device, uint32_t *position)
     }
 }
 
+void print_can_message(CANMessage* msg) {
+    printf("CAN Message: \n\tapi_class: %d\n\tapi_id: %d\n\tdvc_type: %d\n\tdvc_num: %d\n\tmfg: %d\n", msg->api_class, msg->api_index, msg->device_type, msg->device, msg->manufacturer);
+    printf("Data (%d):\n", msg->data_size);
+    for (int i = 0; i < msg->data_size; ++i)
+        printf("\t%x\n", msg->data[i]);
+}
+
 int status_mode(JaguarConnection *conn, uint8_t device, uint8_t *mode)
 {
     CANMessage message;
@@ -291,9 +310,14 @@ int status_mode(JaguarConnection *conn, uint8_t device, uint8_t *mode)
     init_jaguar_message(&message, API_STATUS, STATUS_MODE);
     message.device = device;
     message.data_size = 0;
+    // print_can_message(&message);
+
     send_can_message(conn, &message);
     recieve_can_message(conn, &reply);
     recieve_can_message(conn, &ack);
+
+    // print_can_message(&reply);
+    // print_can_message(&ack);
 
     if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
         *mode = reply.data[0];
@@ -312,6 +336,7 @@ int voltage_enable(JaguarConnection *conn, uint8_t device)
     message.data_size = 0;
     send_can_message(conn, &message);
     recieve_can_message(conn, &ack);
+    // print_can_message(&ack);
 
     return 1 - valid_ack(&message, &ack);
 }
