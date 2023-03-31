@@ -11,6 +11,19 @@
 #include <stdbool.h>
 #include <termios.h>
 #include <unistd.h>
+#include <linux/socket.h>
+
+#include <linux/can.h>
+#include <linux/can/raw.h>
+#include <linux/sockios.h>
+#include <memory.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/uio.h>
 
 #ifdef CANDRIVER_SERIAL
 
@@ -21,7 +34,13 @@ typedef struct CANConnection {
     struct termios *saved_settings;
 } CANConnection;
 
-#elif CANDRIVER_SOCKETCAN
+#elif defined(CANDRIVER_SOCKETCAN)
+
+typedef struct CANConnection {
+    int socket_fd;
+    bool is_connected;
+    const char *can_dvc;
+} CANConnection;
 
 #endif
 

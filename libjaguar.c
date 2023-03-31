@@ -132,24 +132,89 @@ int recieve_can_message(CANConnection *conn, CANMessage *message)
     return 0;
 }
 
-#elif CANDRIVER_SOCKETCAN
+#elif defined(CANDRIVER_SOCKETCAN)
+
 
 
 int open_can_connection(CANConnection *conn, const char *serial_port) {
+    struct sockaddr_can addr;
+    struct ifreq ifr;
 
+    conn->socket_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    assert( conn->socket_fd>0);
+
+
+    strcpy(ifr.ifr_name, "can0");
+    ioctl(conn->socket_fd, SIOCGIFINDEX, &ifr);
+    int bufsize = 128;
+    setsockopt(conn->socket_fd, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(bufsize));
+
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+
+    int berr= bind(conn->socket_fd, (struct sockaddr*)&addr, sizeof(addr));
+    assert(berr >= 0);
+
+    conn->is_connected = true;
+    return 0;
 }
 
 int close_can_connection(CANConnection *conn) {
-
+    close(conn->socket_fd);
 }
 
 int send_can_message(CANConnection *conn, CANMessage *message) {
+    struct can_frame frame;
 
+    uint32_t canid = 0;
+    canid |= message->device;
+    canid |= message->api_index  << 6;
+    canid |= message->api_class << 10;
+    canid |= message->manufacturer << 16;
+    canid |= message->device_type << 24;
+    // class, index = 5,3
+    // canid = reverse_bytes(canid);
+
+    frame.can_id = canid | CAN_EFF_FLAG;
+    // printf("Canid: %x\n", frame.can_id);
+    memcpy(frame.data, message->data, MAX_DATA_BYTES);
+
+    frame.can_dlc = message->data_size;
+
+
+    int nbytes = write(conn->socket_fd, &frame, sizeof(struct can_frame));
+   
+    return nbytes > 0;
 }
 
 int recieve_can_message(CANConnection *conn, CANMessage *message) {
+    struct can_frame frame;
 
+        // printf("srx\n");
 
+    int nbytes = read(conn->socket_fd, &frame, sizeof(struct can_frame));
+
+    if (nbytes < sizeof(struct can_frame)) {
+        perror("can raw socket read");
+        return 1;
+    }
+    // printf("Recv message! ID = %x\n", frame.can_id);
+
+    uint32_t cid = frame.can_id;
+    message->device = cid & 0x3F;
+    cid >>= 6;
+    message->api_index = cid & 0x0F;
+    cid >>= 4;
+    message->api_class = cid & 0x3F;
+    cid >>= 6;
+    message->manufacturer = cid & 0xFF;
+    cid >>= 8;
+    message->device_type = cid & 0x1F;
+
+    memcpy(message->data, frame.data, frame.can_dlc);
+
+    // printf("succ recv\n");
     return 0;
 }
 
@@ -174,14 +239,14 @@ int init_jaguar_message(CANMessage *message, uint8_t api_class, uint8_t api_inde
     return 0;
 }
 
-bool valid_sys_reply(CANMessage *message, CANMessage *reply)
-{
-    return reply->manufacturer == MANUFACTURER_SYS
-            && reply->device_type == DEVTYPE_SYS
-            && reply->api_class == API_SYS
-            && reply->api_index == message->api_index
-            && reply->device == message->device;
-}
+// bool valid_sys_reply(CANMessage *message, CANMessage *reply)
+// {
+//     return reply->manufacturer == MANUFACTURER_SYS
+//             && reply->device_type == DEVTYPE_SYS
+//             && reply->api_class == API_SYS
+//             && reply->api_index == message->api_index
+//             && reply->device == message->device;
+// }
 
 bool valid_jaguar_reply(CANMessage *message, CANMessage *reply)
 {
@@ -280,17 +345,31 @@ int status_output_percent(CANConnection *conn, uint8_t device,
 }
 
 int status_temperature(CANConnection *conn, uint8_t device, 
-        uint16_t *temperature)
-{
+        uint16_t *temperature) {
     CANMessage message;
     CANMessage reply;
     CANMessage ack;
     init_jaguar_message(&message, API_STATUS, STATUS_TEMPERATURE);
-    message.device = device;
+    message.device = device; 
     message.data_size = 0;
     send_can_message(conn, &message);
+        // usleep(10);
+
+
+    /* WANTED:
+    can0  020214C3   [0] 
+    can0  020214C3   [2]  E1 11
+    can0  02022003   [0] 
+    
+    GOT:
+    can0  020214C3   [0] 
+    can0  020214C3   [2]  EC 10
+    can0  02022003   [0] 
+    */
+
     recieve_can_message(conn, &reply);
     recieve_can_message(conn, &ack);
+
 
     if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
         *temperature = reply.data[0] | reply.data[1] << 8;
@@ -361,10 +440,13 @@ int voltage_enable(CANConnection *conn, uint8_t device)
     message.device = device;
     message.data_size = 0;
     send_can_message(conn, &message);
-    recieve_can_message(conn, &ack);
-    // print_can_message(&ack);
 
-    return 1 - valid_ack(&message, &ack);
+    printf("ven\n");
+    recieve_can_message(conn, &ack);
+    print_can_message(&ack);
+
+    
+    return 0;
 }
 
 int voltage_disable(CANConnection *conn, uint8_t device)
@@ -392,6 +474,7 @@ int voltage_set(CANConnection *conn, uint8_t device, int16_t voltage)
     send_can_message(conn, &message);
     recieve_can_message(conn, &ack);
 
+    // return 0;
     return 1 - valid_ack(&message, &ack);
 }
 

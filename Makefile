@@ -3,4 +3,4 @@ run: build
 	sudo ./testjag
 
 build:
-	gcc -g -DCANDRIVER_SERIAL ./test.c ./libjaguar.c ./canutil.c -o ./testjag
+	gcc -g -DCANDRIVER_SOCKETCAN ./test.c ./libjaguar.c ./canutil.c -lpthread -o ./testjag 

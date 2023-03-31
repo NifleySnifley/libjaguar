@@ -1,4 +1,4 @@
-#define CANDRIVER_SERIAL
+#define CANDRIVER_SOCKETCAN
 #include <stdio.h>
 #include "libjaguar.h"
 #include <stdlib.h>
@@ -35,7 +35,7 @@ static int16_t axes[16];
 static pthread_t js_thread;
 
 void js_reader(void* args) {
-    const char* js_fname="/dev/input/js1";
+    const char* js_fname="/dev/input/js0";
     int js_fd;
     js_fd = open(js_fname, O_RDONLY);
 
@@ -71,34 +71,30 @@ int main(int argc, char const *argv[]) {
     signal(SIGINT, int_handler); 
 
     CANConnection conn;
-    uint8_t dvc = 3;
-    int err = open_can_connection(&conn, "/dev/ttyUSB0");
+    uint8_t dvc = 2;
+    int err = open_can_connection(&conn, "can0");
     chkerr(err, 0);
 
-    // sys_reset(&conn, dvc);
-    // exit(0);
 
     err = voltage_enable(&conn, dvc);
-    err = voltage_enable(&conn, 2);
-    chkerr(err, 1);
+    err = voltage_enable(&conn, 3);
+    chkerr(err, 1); 
 
-    // uint16_t tmp;
-    // err = status_temperature(&conn, dvc, &tmp);
-    // chkerr(err, 3);
-    // printf("Device temperature: %f\n", fixed16_to_float(tmp));
+    uint16_t tmp;
+    err = status_temperature(&conn, dvc, &tmp);
+    chkerr(err, 3);
+    printf("Device temperature: %f\n", fixed16_to_float(tmp));
 
     assert(pthread_create(&js_thread, NULL, js_reader, NULL) == 0);
 
-    for (int i = 0; i < 1<<15; ++i) {
+    while (1) {
         sys_heartbeat(&conn, dvc);
         voltage_set(&conn, dvc, axes[4]);
-        voltage_set(&conn, 2, axes[4]);
-        // voltage_set(&conn, 2, 0);
+        voltage_set(&conn, 3, axes[1]);
         // status_output_percent(&conn, dvc, &tmp);
         // float tv = fixed16_to_float(tmp) / 1.28;
         // printf("Output: %0.1f\r", tv > 99.9999f ? (200.0f-tv) : -tv);
     }
-
 
     close_can_connection(&conn);
     return 0;
