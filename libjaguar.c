@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-int open_jaguar_connection(JaguarConnection *conn, const char *serial_port)
+#ifdef CANDRIVER_SERIAL
+
+int open_can_connection(CANConnection *conn, const char *serial_port)
 {
     int fd;
     struct termios settings;
@@ -43,7 +45,7 @@ int open_jaguar_connection(JaguarConnection *conn, const char *serial_port)
     return 0;
 }
 
-int close_jaguar_connection(JaguarConnection *conn)
+int close_can_connection(CANConnection *conn)
 {
     int fd;
     conn->is_connected = false;
@@ -65,7 +67,7 @@ int close_jaguar_connection(JaguarConnection *conn)
     return 0;
 }
 
-int send_can_message(JaguarConnection *conn, CANMessage *message)
+int send_can_message(CANConnection *conn, CANMessage *message)
 {
     CANEncodedMsg encoded_message;
 
@@ -77,7 +79,7 @@ int send_can_message(JaguarConnection *conn, CANMessage *message)
     return 0;
 }
 
-int recieve_can_message(JaguarConnection *conn, CANMessage *message)
+int recieve_can_message(CANConnection *conn, CANMessage *message)
 {
     int fd;
     int bytes_read;
@@ -130,6 +132,30 @@ int recieve_can_message(JaguarConnection *conn, CANMessage *message)
     return 0;
 }
 
+#elif CANDRIVER_SOCKETCAN
+
+
+int open_can_connection(CANConnection *conn, const char *serial_port) {
+
+}
+
+int close_can_connection(CANConnection *conn) {
+
+}
+
+int send_can_message(CANConnection *conn, CANMessage *message) {
+
+}
+
+int recieve_can_message(CANConnection *conn, CANMessage *message) {
+
+
+    return 0;
+}
+
+#endif
+
+
 int init_sys_message(CANMessage *message, uint8_t api_index)
 {
     message->manufacturer = MANUFACTURER_SYS;
@@ -176,7 +202,7 @@ bool valid_ack(CANMessage *message, CANMessage *ack)
             && ack->device == message->device;
 }
 
-int sys_heartbeat(JaguarConnection *conn, uint8_t device)
+int sys_heartbeat(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     init_sys_message(&message, SYS_HEARTBEAT);
@@ -187,7 +213,7 @@ int sys_heartbeat(JaguarConnection *conn, uint8_t device)
     return 0;
 }
 
-int sys_sync_update(JaguarConnection *conn, uint8_t mask)
+int sys_sync_update(CANConnection *conn, uint8_t mask)
 {
     CANMessage message;
     init_sys_message(&message, SYS_SYNC_UPDATE);
@@ -199,7 +225,7 @@ int sys_sync_update(JaguarConnection *conn, uint8_t mask)
     return 0;
 }
 
-int sys_halt(JaguarConnection *conn, uint8_t device)
+int sys_halt(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     init_sys_message(&message, SYS_HALT);
@@ -210,7 +236,7 @@ int sys_halt(JaguarConnection *conn, uint8_t device)
     return 0;
 }
 
-int sys_reset(JaguarConnection *conn, uint8_t device)
+int sys_reset(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     init_sys_message(&message, SYS_RESET);
@@ -221,7 +247,7 @@ int sys_reset(JaguarConnection *conn, uint8_t device)
     return 0;
 }
 
-int sys_resume(JaguarConnection *conn, uint8_t device)
+int sys_resume(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     init_sys_message(&message, SYS_RESUME);
@@ -232,7 +258,7 @@ int sys_resume(JaguarConnection *conn, uint8_t device)
     return 0;
 }
 
-int status_output_percent(JaguarConnection *conn, uint8_t device, 
+int status_output_percent(CANConnection *conn, uint8_t device, 
         int16_t *output_percent)
 {
     CANMessage message;
@@ -253,7 +279,7 @@ int status_output_percent(JaguarConnection *conn, uint8_t device,
     }
 }
 
-int status_temperature(JaguarConnection *conn, uint8_t device, 
+int status_temperature(CANConnection *conn, uint8_t device, 
         uint16_t *temperature)
 {
     CANMessage message;
@@ -274,7 +300,7 @@ int status_temperature(JaguarConnection *conn, uint8_t device,
     }
 }
 
-int status_position(JaguarConnection *conn, uint8_t device, uint32_t *position)
+int status_position(CANConnection *conn, uint8_t device, uint32_t *position)
 {
     CANMessage message;
     CANMessage reply;
@@ -302,7 +328,7 @@ void print_can_message(CANMessage* msg) {
         printf("\t%x\n", msg->data[i]);
 }
 
-int status_mode(JaguarConnection *conn, uint8_t device, uint8_t *mode)
+int status_mode(CANConnection *conn, uint8_t device, uint8_t *mode)
 {
     CANMessage message;
     CANMessage reply;
@@ -327,7 +353,7 @@ int status_mode(JaguarConnection *conn, uint8_t device, uint8_t *mode)
     }
 }
 
-int voltage_enable(JaguarConnection *conn, uint8_t device)
+int voltage_enable(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     CANMessage ack;
@@ -341,7 +367,7 @@ int voltage_enable(JaguarConnection *conn, uint8_t device)
     return 1 - valid_ack(&message, &ack);
 }
 
-int voltage_disable(JaguarConnection *conn, uint8_t device)
+int voltage_disable(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     CANMessage ack;
@@ -354,7 +380,7 @@ int voltage_disable(JaguarConnection *conn, uint8_t device)
     return 1 - valid_ack(&message, &ack);
 }
 
-int voltage_set(JaguarConnection *conn, uint8_t device, int16_t voltage)
+int voltage_set(CANConnection *conn, uint8_t device, int16_t voltage)
 {
     CANMessage message;
     CANMessage ack;
@@ -369,7 +395,7 @@ int voltage_set(JaguarConnection *conn, uint8_t device, int16_t voltage)
     return 1 - valid_ack(&message, &ack);
 }
 
-int voltage_set_sync(JaguarConnection *conn, uint8_t device, int16_t voltage, 
+int voltage_set_sync(CANConnection *conn, uint8_t device, int16_t voltage, 
         uint8_t group)
 {
     CANMessage message;
@@ -386,7 +412,7 @@ int voltage_set_sync(JaguarConnection *conn, uint8_t device, int16_t voltage,
     return 1 - valid_ack(&message, &ack);
 }
 
-int voltage_get(JaguarConnection *conn, uint8_t device, int16_t *voltage)
+int voltage_get(CANConnection *conn, uint8_t device, int16_t *voltage)
 {
     CANMessage message;
     CANMessage reply;
@@ -406,7 +432,7 @@ int voltage_get(JaguarConnection *conn, uint8_t device, int16_t *voltage)
     }
 }
 
-int voltage_ramp(JaguarConnection *conn, uint8_t device, uint16_t ramp)
+int voltage_ramp(CANConnection *conn, uint8_t device, uint16_t ramp)
 {
     CANMessage message;
     CANMessage ack;
@@ -421,7 +447,7 @@ int voltage_ramp(JaguarConnection *conn, uint8_t device, uint16_t ramp)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_enable(JaguarConnection *conn, uint8_t device, int32_t position)
+int position_enable(CANConnection *conn, uint8_t device, int32_t position)
 {
     CANMessage message;
     CANMessage ack;
@@ -438,7 +464,7 @@ int position_enable(JaguarConnection *conn, uint8_t device, int32_t position)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_disable(JaguarConnection *conn, uint8_t device)
+int position_disable(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     CANMessage ack;
@@ -451,7 +477,7 @@ int position_disable(JaguarConnection *conn, uint8_t device)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_set(JaguarConnection *conn, uint8_t device, int32_t position)
+int position_set(CANConnection *conn, uint8_t device, int32_t position)
 {
     CANMessage message;
     CANMessage ack;
@@ -468,7 +494,7 @@ int position_set(JaguarConnection *conn, uint8_t device, int32_t position)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_set_sync(JaguarConnection *conn, uint8_t device, int32_t position,
+int position_set_sync(CANConnection *conn, uint8_t device, int32_t position,
         uint8_t group)
 {
     CANMessage message;
@@ -487,7 +513,7 @@ int position_set_sync(JaguarConnection *conn, uint8_t device, int32_t position,
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_get(JaguarConnection *conn, uint8_t device, int32_t *position)
+int position_get(CANConnection *conn, uint8_t device, int32_t *position)
 {
     CANMessage message;
     CANMessage reply;
@@ -508,7 +534,7 @@ int position_get(JaguarConnection *conn, uint8_t device, int32_t *position)
     }
 }
 
-int position_ref_encoder(JaguarConnection *conn, uint8_t device)
+int position_ref_encoder(CANConnection *conn, uint8_t device)
 {
     CANMessage message;
     CANMessage ack;
@@ -522,7 +548,7 @@ int position_ref_encoder(JaguarConnection *conn, uint8_t device)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_p(JaguarConnection *conn, uint8_t device, int32_t p)
+int position_p(CANConnection *conn, uint8_t device, int32_t p)
 {
     CANMessage message;
     CANMessage ack;
@@ -539,7 +565,7 @@ int position_p(JaguarConnection *conn, uint8_t device, int32_t p)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_i(JaguarConnection *conn, uint8_t device, int32_t i)
+int position_i(CANConnection *conn, uint8_t device, int32_t i)
 {
     CANMessage message;
     CANMessage ack;
@@ -556,7 +582,7 @@ int position_i(JaguarConnection *conn, uint8_t device, int32_t i)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_d(JaguarConnection *conn, uint8_t device, int32_t d)
+int position_d(CANConnection *conn, uint8_t device, int32_t d)
 {
     CANMessage message;
     CANMessage ack;
@@ -573,14 +599,14 @@ int position_d(JaguarConnection *conn, uint8_t device, int32_t d)
     return 1 - valid_ack(&message, &ack);
 }
 
-int position_pid(JaguarConnection *conn, uint8_t device, int32_t p, int32_t i, 
+int position_pid(CANConnection *conn, uint8_t device, int32_t p, int32_t i, 
         int32_t d)
 {
     return position_p(conn, device, p) | position_i(conn, device, i) | 
         position_d(conn, device, d);
 }
 
-int config_encoder_lines(JaguarConnection *conn, uint8_t device, uint16_t lines)
+int config_encoder_lines(CANConnection *conn, uint8_t device, uint16_t lines)
 {
     CANMessage message;
     CANMessage ack;
@@ -595,7 +621,7 @@ int config_encoder_lines(JaguarConnection *conn, uint8_t device, uint16_t lines)
     return 1 - valid_ack(&message, &ack);
 }
 
-int get_encoder_lines(JaguarConnection *conn, uint8_t device, uint16_t *lines)
+int get_encoder_lines(CANConnection *conn, uint8_t device, uint16_t *lines)
 {
     CANMessage message;
     CANMessage reply;

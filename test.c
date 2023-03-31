@@ -1,3 +1,4 @@
+#define CANDRIVER_SERIAL
 #include <stdio.h>
 #include "libjaguar.h"
 #include <stdlib.h>
@@ -69,31 +70,36 @@ void int_handler() {
 int main(int argc, char const *argv[]) {
     signal(SIGINT, int_handler); 
 
-    JaguarConnection conn;
+    CANConnection conn;
     uint8_t dvc = 3;
-    int err = open_jaguar_connection(&conn, "/dev/ttyUSB0");
+    int err = open_can_connection(&conn, "/dev/ttyUSB0");
     chkerr(err, 0);
 
+    // sys_reset(&conn, dvc);
+    // exit(0);
+
     err = voltage_enable(&conn, dvc);
+    err = voltage_enable(&conn, 2);
     chkerr(err, 1);
 
-    uint16_t tmp;
-    err = status_temperature(&conn, dvc, &tmp);
-    chkerr(err, 3);
-    printf("Device temperature: %f\n", fixed16_to_float(tmp));
+    // uint16_t tmp;
+    // err = status_temperature(&conn, dvc, &tmp);
+    // chkerr(err, 3);
+    // printf("Device temperature: %f\n", fixed16_to_float(tmp));
 
     assert(pthread_create(&js_thread, NULL, js_reader, NULL) == 0);
 
     for (int i = 0; i < 1<<15; ++i) {
         sys_heartbeat(&conn, dvc);
         voltage_set(&conn, dvc, axes[4]);
-        status_output_percent(&conn, dvc, &tmp);
-        float tv = fixed16_to_float(tmp) / 1.28;
-        printf("Output: %0.1f\r", tv > 99.9999f ? (200.0f-tv) : -tv);
-        // msleep(10);
+        voltage_set(&conn, 2, axes[4]);
+        // voltage_set(&conn, 2, 0);
+        // status_output_percent(&conn, dvc, &tmp);
+        // float tv = fixed16_to_float(tmp) / 1.28;
+        // printf("Output: %0.1f\r", tv > 99.9999f ? (200.0f-tv) : -tv);
     }
 
 
-    close_jaguar_connection(&conn);
+    close_can_connection(&conn);
     return 0;
 }
