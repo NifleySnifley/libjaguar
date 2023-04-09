@@ -162,6 +162,7 @@ int open_can_connection(CANConnection *conn, const char *serial_port) {
 
 int close_can_connection(CANConnection *conn) {
     close(conn->socket_fd);
+    return 0;
 }
 
 int send_can_message(CANConnection *conn, CANMessage *message) {

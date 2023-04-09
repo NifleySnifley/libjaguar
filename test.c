@@ -77,7 +77,7 @@ int main(int argc, char const *argv[]) {
 
 
     err = voltage_enable(&conn, dvc);
-    err = voltage_enable(&conn, 3);
+    //err = voltage_enable(&conn, 3);
     chkerr(err, 1); 
 
     uint16_t tmp;
@@ -90,7 +90,7 @@ int main(int argc, char const *argv[]) {
     while (1) {
         sys_heartbeat(&conn, dvc);
         voltage_set(&conn, dvc, axes[4]);
-        voltage_set(&conn, 3, axes[1]);
+        //voltage_set(&conn, 3, axes[1]);
         // status_output_percent(&conn, dvc, &tmp);
         // float tv = fixed16_to_float(tmp) / 1.28;
         // printf("Output: %0.1f\r", tv > 99.9999f ? (200.0f-tv) : -tv);
