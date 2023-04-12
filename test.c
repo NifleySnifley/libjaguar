@@ -77,23 +77,28 @@ int main(int argc, char const *argv[]) {
 
 
     err = voltage_enable(&conn, dvc);
+    err=speed_set_ref(&conn, dvc, 3);
     //err = voltage_enable(&conn, 3);
     chkerr(err, 1); 
+
+    assert(0==config_encoder_lines(&conn, dvc, 2048));
+    assert(0==position_ref_encoder(&conn, dvc));
 
     uint16_t tmp;
     err = status_temperature(&conn, dvc, &tmp);
     chkerr(err, 3);
     printf("Device temperature: %f\n", fixed16_to_float(tmp));
 
-    assert(pthread_create(&js_thread, NULL, js_reader, NULL) == 0);
+    //assert(pthread_create(&js_thread, NULL, js_reader, NULL) == 0);
 
     while (1) {
         sys_heartbeat(&conn, dvc);
-        voltage_set(&conn, dvc, axes[4]);
+        //voltage_set(&conn, dvc, axes[4]);
         //voltage_set(&conn, 3, axes[1]);
-        // status_output_percent(&conn, dvc, &tmp);
-        // float tv = fixed16_to_float(tmp) / 1.28;
-        // printf("Output: %0.1f\r", tv > 99.9999f ? (200.0f-tv) : -tv);
+        uint32_t tmp;
+        assert(0==status_speed(&conn, dvc, &tmp));
+        float tv = fixed32_to_float(tmp);
+        printf("Speed: %f\r", tv);
     }
 
     close_can_connection(&conn);

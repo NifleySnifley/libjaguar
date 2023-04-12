@@ -98,15 +98,15 @@ int decode_can_message(CANEncodedMsg *encoded_message, CANMessage *message)
 float fixed16_to_float(uint16_t fx)
 {
     float fl;
-    fl = (float) (fx >> 8);
-    fl += (float) (fx & 0x00ff) / 256.0;
+    fl = (float) ((int8_t)(fx >> 8));
+    fl += (float) ((uint8_t)(fx & 0x00ff)) / 256.0;
     return fl;
 }
 
 float fixed32_to_float(uint32_t fx)
 {
     float fl;
-    fl = (float) (fx >> 16);
-    fl += (float) (fx & 0x0000ffff) / 65536.0;
+    fl = (float) ((int16_t)(fx >> 16));
+    fl += (float) ((uint16_t)(fx & 0x0000ffff)) / 65536.0;
     return fl;
 }

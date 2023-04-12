@@ -401,6 +401,27 @@ int status_position(CANConnection *conn, uint8_t device, uint32_t *position)
     }
 }
 
+int status_speed(CANConnection *conn, uint8_t device, uint32_t *speed)
+{
+    CANMessage message;
+    CANMessage reply;
+    CANMessage ack;
+    init_jaguar_message(&message, API_STATUS, 5);
+    message.device = device;
+    message.data_size = 0;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &reply);
+    recieve_can_message(conn, &ack);
+
+    if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
+        *speed = reply.data[0] | reply.data[1] << 8 | reply.data[2] << 16 
+            | reply.data[3] << 24;
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 void print_can_message(CANMessage* msg) {
     printf("CAN Message: \n\tapi_class: %d\n\tapi_id: %d\n\tdvc_type: %d\n\tdvc_num: %d\n\tmfg: %d\n", msg->api_class, msg->api_index, msg->device_type, msg->device, msg->manufacturer);
     printf("Data (%d):\n", msg->data_size);
@@ -689,6 +710,22 @@ int position_pid(CANConnection *conn, uint8_t device, int32_t p, int32_t i,
     return position_p(conn, device, p) | position_i(conn, device, i) | 
         position_d(conn, device, d);
 }
+
+int speed_set_ref(CANConnection *conn, uint8_t device, uint8_t ref)
+{
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_SPEED, SPEED_REF);
+    message.device = device;
+    message.data_size = 1;
+    message.data[0] = ref;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &ack);
+
+    // return 0;
+    return 1 - valid_ack(&message, &ack);
+}
+
 
 int config_encoder_lines(CANConnection *conn, uint8_t device, uint16_t lines)
 {

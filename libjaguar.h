@@ -86,11 +86,14 @@ int position_pid(CANConnection *conn, uint8_t device, int32_t p, int32_t i,
         int32_t d);
 int position_ref_encoder(CANConnection *conn, uint8_t device);
 
+int speed_set_ref(CANConnection *conn, uint8_t device, uint8_t ref);
+
 int status_output_percent(CANConnection *conn, uint8_t device, 
         int16_t *output_percent);
 int status_temperature(CANConnection *conn, uint8_t device, 
         uint16_t *temperature);
 int status_position(CANConnection *conn, uint8_t device, uint32_t *position);
+int status_speed(CANConnection *conn, uint8_t device, uint32_t *speed);
 int status_mode(CANConnection *conn, uint8_t device, uint8_t *mode);
 
 int config_encoder_lines(CANConnection *conn, uint8_t device, uint16_t lines);
