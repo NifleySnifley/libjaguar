@@ -1,4 +1,3 @@
-#define CANDRIVER_SOCKETCAN
 #include <stdio.h>
 #include "libjaguar.h"
 #include <stdlib.h>
@@ -19,7 +18,7 @@ void chkerr(int err, int f) {
     }
 }
 
-int read_event(int fd, struct js_event *event) {
+int read_event(int fd, struct js_event* event) {
     ssize_t bytes;
 
     bytes = read(fd, event, sizeof(*event));
@@ -35,7 +34,7 @@ static int16_t axes[16];
 static pthread_t js_thread;
 
 void js_reader(void* args) {
-    const char* js_fname="/dev/input/js0";
+    const char* js_fname = "/dev/input/js0";
     int js_fd;
     js_fd = open(js_fname, O_RDONLY);
 
@@ -43,10 +42,9 @@ void js_reader(void* args) {
         perror("Could not open joystick");
 
     struct js_event ev;
-        
+
     while (read_event(js_fd, &ev) == 0) {
-        switch (ev.type)
-        {
+        switch (ev.type) {
             case JS_EVENT_BUTTON:
                 printf("Button %u %s\n", ev.number, ev.value ? "pressed" : "released");
                 break;
@@ -57,18 +55,18 @@ void js_reader(void* args) {
                 /* Ignore init events. */
                 break;
         }
-        
+
         fflush(stdout);
     }
 }
- 
+
 void int_handler() {
     pthread_cancel(js_thread);
     exit(0);
 }
 
-int main(int argc, char const *argv[]) {
-    signal(SIGINT, int_handler); 
+int main(int argc, char const* argv[]) {
+    signal(SIGINT, int_handler);
 
     CANConnection conn;
     uint8_t dvc = 2;
@@ -77,12 +75,12 @@ int main(int argc, char const *argv[]) {
 
 
     err = voltage_enable(&conn, dvc);
-    err=speed_set_ref(&conn, dvc, 3);
+    err = speed_set_ref(&conn, dvc, 3);
     //err = voltage_enable(&conn, 3);
-    chkerr(err, 1); 
+    chkerr(err, 1);
 
-    assert(0==config_encoder_lines(&conn, dvc, 2048));
-    assert(0==position_ref_encoder(&conn, dvc));
+    assert(0 == config_encoder_lines(&conn, dvc, 2048));
+    assert(0 == position_ref_encoder(&conn, dvc));
 
     uint16_t tmp;
     err = status_temperature(&conn, dvc, &tmp);
@@ -96,7 +94,7 @@ int main(int argc, char const *argv[]) {
         //voltage_set(&conn, dvc, axes[4]);
         //voltage_set(&conn, 3, axes[1]);
         uint32_t tmp;
-        assert(0==status_speed(&conn, dvc, &tmp));
+        assert(0 == status_speed(&conn, dvc, &tmp));
         float tv = fixed32_to_float(tmp);
         printf("Speed: %f\r", tv);
     }
