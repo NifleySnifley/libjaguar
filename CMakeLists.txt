@@ -8,7 +8,7 @@ add_library(libjaguar SHARED
 )
 
 target_compile_definitions(libjaguar PUBLIC
-	-DCANDRIVER_SOCKETCAN=1
+	-DCANDRIVER_WIN32=1
 )
 
 set(LIBJAGUAR_INCLUDES
