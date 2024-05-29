@@ -5,12 +5,14 @@
 #include "canutil.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
+
+#define CANDRIVER_WIN32 1
+
+#ifndef CANDRIVER_WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdbool.h>
-
-#ifndef CANDRIVER_WIN32
 #include <termios.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -27,7 +29,6 @@
 #else
 #include <Windows.h>
 #endif
-
 
 
 #include <memory.h>
@@ -85,6 +86,20 @@ int voltage_set_sync(CANConnection* conn, uint8_t device, int16_t voltage,
 int voltage_get(CANConnection* conn, uint8_t device, int16_t* voltage);
 int voltage_ramp(CANConnection* conn, uint8_t device, uint16_t ramp);
 
+
+int voltcomp_enable(CANConnection* conn, uint8_t device);
+int voltcomp_disable(CANConnection* conn, uint8_t device);
+int voltcomp_set_volts(CANConnection* conn, uint8_t device, int16_t voltage);
+// int voltcomp_set_sync(CANConnection* conn, uint8_t device, int16_t voltage,
+        // uint8_t group);
+// int voltage_comp_get_volts(CANConnection* conn, uint8_t device, int16_t* voltage);
+/// volts/ms
+int voltcomp_ramp(CANConnection* conn, uint8_t device, uint16_t ramp);
+/// volts/ms
+int voltcomp_comp_ramp(CANConnection* conn, uint8_t device, uint16_t ramp);
+
+
+
 int position_enable(CANConnection* conn, uint8_t device,
         int32_t position);
 int position_disable(CANConnection* conn, uint8_t device);
@@ -99,6 +114,7 @@ int position_d(CANConnection* conn, uint8_t device, int32_t d);
 int position_pid(CANConnection* conn, uint8_t device, int32_t p, int32_t i,
         int32_t d);
 int position_ref_encoder(CANConnection* conn, uint8_t device);
+int position_set_ref(CANConnection* conn, uint8_t device, uint8_t ref);
 
 int speed_set_ref(CANConnection* conn, uint8_t device, uint8_t ref);
 
@@ -109,6 +125,9 @@ int status_temperature(CANConnection* conn, uint8_t device,
 int status_position(CANConnection* conn, uint8_t device, uint32_t* position);
 int status_speed(CANConnection* conn, uint8_t device, uint32_t* speed);
 int status_mode(CANConnection* conn, uint8_t device, uint8_t* mode);
+int status_limits(CANConnection* conn, uint8_t device, uint8_t* lims);
+int status_bus_voltage(CANConnection* conn, uint8_t device, uint16_t* voltage);
+int status_current(CANConnection* conn, uint8_t device, uint16_t* current);
 
 int config_encoder_lines(CANConnection* conn, uint8_t device, uint16_t lines);
 int get_encoder_lines(CANConnection* conn, uint8_t device, uint16_t* lines);

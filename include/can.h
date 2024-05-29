@@ -59,6 +59,10 @@
 #define SPEED_ENCODER_1CH_INV 2
 #define SPEED_ENCODER_QUAD    3
 
+#define POS_ENCODER_QUAD     0
+#define POS_ANALOG    0
+// #define POS_ENCODER_QUAD     0
+
 // Voltage Compensation Control Interface
 #define VOLTCOMP_ENABLE  0
 #define VOLTCOMP_DISABLE 1

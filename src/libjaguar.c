@@ -470,6 +470,44 @@ int status_output_percent(CANConnection* conn, uint8_t device,
     }
 }
 
+int status_current(CANConnection* conn, uint8_t device, uint16_t* current) {
+    CANMessage message;
+    CANMessage reply;
+    CANMessage ack;
+    init_jaguar_message(&message, API_STATUS, STATUS_CURRENT);
+    message.device = device;
+    message.data_size = 0;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &reply);
+    recieve_can_message(conn, &ack);
+
+    if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
+        *current = reply.data[0] | reply.data[1] << 8;
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+int status_bus_voltage(CANConnection* conn, uint8_t device, uint16_t* voltage) {
+    CANMessage message;
+    CANMessage reply;
+    CANMessage ack;
+    init_jaguar_message(&message, API_STATUS, STATUS_BUS_VOLTAGE);
+    message.device = device;
+    message.data_size = 0;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &reply);
+    recieve_can_message(conn, &ack);
+
+    if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
+        *voltage = reply.data[0] | reply.data[1] << 8;
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 int status_temperature(CANConnection* conn, uint8_t device,
     uint16_t* temperature) {
     CANMessage message;
@@ -577,6 +615,30 @@ int status_mode(CANConnection* conn, uint8_t device, uint8_t* mode) {
     }
 }
 
+int status_limits(CANConnection* conn, uint8_t device, uint8_t* lims) {
+    CANMessage message;
+    CANMessage reply;
+    CANMessage ack;
+    init_jaguar_message(&message, API_STATUS, STATUS_MODE);
+    message.device = device;
+    message.data_size = 0;
+    // print_can_message(&message);
+
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &reply);
+    recieve_can_message(conn, &ack);
+
+    // print_can_message(&reply);
+    // print_can_message(&ack);
+
+    if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
+        *lims = reply.data[0];
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 int voltage_enable(CANConnection* conn, uint8_t device) {
     CANMessage message;
     CANMessage ack;
@@ -585,9 +647,9 @@ int voltage_enable(CANConnection* conn, uint8_t device) {
     message.data_size = 0;
     send_can_message(conn, &message);
 
-    printf("ven\n");
+    // printf("ven\n");
     recieve_can_message(conn, &ack);
-    print_can_message(&ack);
+    // print_can_message(&ack);
 
 
     return 0;
@@ -767,6 +829,19 @@ int position_ref_encoder(CANConnection* conn, uint8_t device) {
     return 1 - valid_ack(&message, &ack);
 }
 
+int position_set_ref(CANConnection* conn, uint8_t device, uint8_t ref) {
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_POSITION, POSITION_REF);
+    message.device = device;
+    message.data_size = 1;
+    message.data[0] = ref;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &ack);
+
+    return 1 - valid_ack(&message, &ack);
+}
+
 int position_p(CANConnection* conn, uint8_t device, int32_t p) {
     CANMessage message;
     CANMessage ack;
@@ -867,3 +942,110 @@ int get_encoder_lines(CANConnection* conn, uint8_t device, uint16_t* lines) {
     }
 }
 
+
+
+int voltcomp_enable(CANConnection* conn, uint8_t device) {
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_ENABLE);
+    message.device = device;
+    message.data_size = 0;
+    send_can_message(conn, &message);
+
+    // printf("ven\n");
+    recieve_can_message(conn, &ack);
+    // print_can_message(&ack);
+
+
+    return 0;
+}
+
+int voltcomp_disable(CANConnection* conn, uint8_t device) {
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_DISABLE);
+    message.device = device;
+    message.data_size = 0;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &ack);
+
+    return 1 - valid_ack(&message, &ack);
+}
+
+int voltcomp_set(CANConnection* conn, uint8_t device, int16_t voltage) {
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_SET);
+    message.device = device;
+    message.data_size = 2;
+    message.data[0] = (uint8_t)(voltage & 0x00ff);
+    message.data[1] = (uint8_t)(voltage >> 8);
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &ack);
+
+    // return 0;
+    return 1 - valid_ack(&message, &ack);
+}
+
+// int voltcomp_set_sync(CANConnection* conn, uint8_t device, int16_t voltage,
+//     uint8_t group) {
+//     CANMessage message;
+//     CANMessage ack;
+//     init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_S);
+//     message.device = device;
+//     message.data_size = 3;
+//     message.data[0] = (uint8_t)(voltage & 0x00ff);
+//     message.data[1] = (uint8_t)(voltage >> 8);
+//     message.data[2] = group;
+//     send_can_message(conn, &message);
+//     recieve_can_message(conn, &ack);
+
+//     return 1 - valid_ack(&message, &ack);
+// }
+
+int voltcomp_get(CANConnection* conn, uint8_t device, int16_t* voltage) {
+    CANMessage message;
+    CANMessage reply;
+    CANMessage ack;
+    init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_SET);
+    message.device = device;
+    message.data_size = 0;
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &reply);
+    recieve_can_message(conn, &ack);
+
+    if (valid_jaguar_reply(&message, &reply) && valid_ack(&message, &ack)) {
+        *voltage = reply.data[0] | reply.data[1] << 8;
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+int voltcomp_ramp(CANConnection* conn, uint8_t device, uint16_t ramp) {
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_RAMP);
+    message.device = device;
+    message.data_size = 2;
+    message.data[0] = (uint8_t)(ramp & 0x00ff);
+    message.data[1] = (uint8_t)(ramp >> 8);
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &ack);
+
+    return 1 - valid_ack(&message, &ack);
+}
+
+int voltcomp_comp_ramp(CANConnection* conn, uint8_t device, uint16_t ramp) {
+    CANMessage message;
+    CANMessage ack;
+    init_jaguar_message(&message, API_VOLTCOMP, VOLTCOMP_RATE);
+    message.device = device;
+    message.data_size = 2;
+    message.data[0] = (uint8_t)(ramp & 0x00ff);
+    message.data[1] = (uint8_t)(ramp >> 8);
+    send_can_message(conn, &message);
+    recieve_can_message(conn, &ack);
+
+    return 1 - valid_ack(&message, &ack);
+}

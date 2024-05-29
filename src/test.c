@@ -50,39 +50,46 @@ int main(int argc, char const* argv[]) {
 
     printf("Successfully opened port\n");
 
+    // uint16_t tmp;
+    // assert(0 == status_temperature(&conn, dvc, &tmp));
+    // printf("Device temperature: %f\n", fixed16_to_float(tmp));
+
+    // sys_reset(&conn, 1);
+
     assert(0 == voltage_enable(&conn, dvc));
     assert(0 == config_encoder_lines(&conn, dvc, 2048));
     assert(0 == position_ref_encoder(&conn, dvc));
     assert(0 == speed_set_ref(&conn, dvc, SPEED_ENCODER_QUAD));
     voltage_ramp(&conn, dvc, float2fixed16(0.1));
 
-    struct timeb lastt, curt;
-    ftime(&lastt);
-    while (running) {
+    printf("R\n");
+    float speed_lpf;
+    const float LPF_C = 0.9;
 
+    // struct timeb lastt, curt;
+    // ftime(&lastt);
+    while (running) {
         sys_heartbeat(&conn, dvc);
 
         assert(0 == voltage_set(&conn, dvc, percent_to_fixed16(cmd)));
 
         uint32_t tmp;
         assert(0 == status_speed(&conn, dvc, &tmp));
-        // printf("Speed (RPS): %f\n", fixed32_to_float(tmp) / 60.0);
-        ftime(&curt);
-        int loopms = (int)(1000.0 * (curt.time - lastt.time)
-            + (curt.millitm - lastt.millitm));
-        printf("Ms: %d Speed (RPS):        \r", loopms);
-        ftime(&lastt);
+        float measurement = fixed32_to_float(tmp) / 60.0f;
+        speed_lpf = speed_lpf * LPF_C + measurement * (1.0f - LPF_C);
+
+        printf("Speed (RPS): %f\n", speed_lpf);
+        // ftime(&curt);
+        // int loopms = (int)(1000.0 * (curt.time - lastt.time)
+            // + (curt.millitm - lastt.millitm));
+        // printf("Ms: %d        \r", loopms);
+        // ftime(&lastt);
     }
 
 
 
     // err = speed_set_ref(&conn, dvc, 3);
     // //err = voltage_enable(&conn, 3);
-
-    // uint16_t tmp;
-    // err = status_temperature(&conn, dvc, &tmp);
-    // // chkerr(err, 3);
-    // printf("Device temperature: %f\n", fixed16_to_float(tmp));
 
     // //assert(pthread_create(&js_thread, NULL, js_reader, NULL) == 0);
 

@@ -111,3 +111,13 @@ uint16_t percent_to_fixed16(float f) {
     f = fmax(-1.0, fmin(1.0 - (1.0 / (1 << 15)), f));
     return (uint16_t)(f * (1 << 15));
 }
+
+uint16_t float_to_fixed16(float f) {
+    int8_t intpart = (int8_t)floor(f);
+    return (intpart << 8) | (((int)(fmodf(f, 1.0f) * 255.0f)) & 0xFF);
+}
+
+uint32_t float_to_fixed32(float f) {
+    int16_t intpart = (int16_t)floor(f);
+    return (intpart << 16) | (((int)(fmodf(f, 1.0f) * 65535.0f)) & 0xFF);
+}
