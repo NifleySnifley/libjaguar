@@ -4,6 +4,7 @@ import ctypes.wintypes
 import os
 from enum import Enum
 from time import sleep
+from sys import platform
 
 ENCODER_1CH = 0
 ENCODER_1CH_INV = 2
@@ -21,8 +22,8 @@ BUS_VOLTAGE_FAULT = 2
 class _CANConnection_Internal(ctypes.Structure):
     _fields_ = [('hSerial', ctypes.wintypes.HANDLE)]
 
-
-P = os.path.abspath("../build/liblibjaguar.dll")
+P = "../build.liblibjaguar.dll" if platform == "win32" else "../build/liblibjaguar.so"
+P = os.path.abspath(P)
 LIB = ctypes.CDLL(P)
 
 

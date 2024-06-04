@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define CANDRIVER_WIN32 1
-
 #ifndef CANDRIVER_WIN32
 #include <sys/types.h>
 #include <sys/stat.h>
